@@ -1,0 +1,10 @@
+[Unit]
+Description=Run pixiecore after it can ping 1.1.1.1
+After=network-online.target
+
+[Service]
+Type=idle
+ExecStart=/usr/bin/launch-pixiecore.sh
+
+[Install]
+WantedBy=network-online.target
