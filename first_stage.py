@@ -8,7 +8,7 @@ from rich.table import Table
 from rich.console import Console
 from sys import exit, argv, stdout
 from typing import List, Dict
-import pylibmount as mnt  # type: ignore
+import libmount as mnt  # type: ignore
 from rich.prompt import Prompt
 from tqdm import tqdm  # type: ignore
 
