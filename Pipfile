@@ -6,7 +6,8 @@ name = "pypi"
 [packages]
 rich = "*"
 requests = "*"
-libmount = "*"
+psutil = "*"
+tqdm = "*"
 
 [dev-packages]
 types-requests = "*"

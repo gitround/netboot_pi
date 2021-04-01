@@ -27,6 +27,6 @@ rich # user interface
 pyparted # partioning disk
 requests # downloading the root-fs for archlinuxarm
 tqdm # progress bar for downloading in the future will be replaced by rich
-libmount # mounting of disk partions
+psutil # information about the disks
 ```
 you will need to have `util-linux` installed for libmount to work correctly. 

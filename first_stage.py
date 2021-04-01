@@ -1,5 +1,5 @@
 import tarfile, requests
-import parted  # type: ignore
+#import parted  # type: ignore
 import subprocess, os, time, shutil
 import psutil  # type: ignore
 from rich import print
@@ -8,7 +8,6 @@ from rich.table import Table
 from rich.console import Console
 from sys import exit, argv, stdout
 from typing import List, Dict
-import libmount as mnt  # type: ignore
 from rich.prompt import Prompt
 from tqdm import tqdm  # type: ignore
 
@@ -29,8 +28,8 @@ def pxeify(convert: bool = False, target=None):
         choices=["Y", "N"],
     )
     if is_sd_card == "N":
-        os.system("sed -i 's/mmcblk0/sda1/g boot/cmdline.txt")
-        os.system("sed -i 's/mmcblk0/sda2/g root/etc/fstab")
+        subprocess.run("sed -i 's/mmcblk0/sda1/g boot/cmdline.txt", shell=True)
+        subprocess.run("sed -i 's/mmcblk0/sda2/g root/etc/fstab", shell=True)
     shutil.copy("second_stage.py", "root/etc/profile/")
     os.mkdir("root/scripts")
     shutil.copytree("stage_scripts", "root/scripts")
@@ -145,12 +144,12 @@ disk_id = 0
 while disk_id > len(devices) or disk_id < len(devices):
     disk_id = int(
         console.input(
-            "enter id of disk to use. [italic bold]this will erease the data on the disk you select[/]: "
+            "enter id of disk to use. [italic bold]this will erase the data on the disk you select[/]: "
         )
     )
 target = devices[disk_id - 1]
 confirm = Prompt.ask(
-    f"[red bold]CREATING PARTIONS. THIS WILL DESTORY ALL DATA ON {target['disk']}. YOU HAVE 5 SECOND TO KILL THIS WITH CTRL+C I YOU DO NOT WANT THIS TO HAPPEN[/]",
+    f"[red bold]CREATING PARTIONS. THIS WILL DESTORY ALL DATA ON {target['disk']}. IF YOU DO NOT WANT THIS TO HAPPEN ENTER N[/]",
     choices=["Y", "N"],
 )
 if confirm == "N":
@@ -158,31 +157,12 @@ if confirm == "N":
     exit(0)
 time.sleep(5)
 print("[green] creating partions [/green]")
-os.system(f"""echo "label: gpt"|fdisk {target}""")
-os.system("partprobe")
-device = parted.getDevice(target)
-disk = parted.freshDisk(device, parted.diskType.GPT)
-# create a boot partition of 512Mb
-print("[green] creating boot partion [/green]")
-geometry1 = parted.Geometry(
-    start=0, length=parted.sizeToSectors(512, "MiB", device.sectorSize), device=device
-)
-filesystem1 = parted.FileSystem(type="vfat", geometry=geometry1)
-partition1 = parted.Partition(
-    disk=disk, type=parted.PARTITION_BOOT, fs=filesystem1, geometry=geometry1
-)
-disk.addPartition(partition1, constraint=device.optimalAlignedConstraint)
-disk.commit()
-print("[green] creating root partition[/green]")
-# create root partition, using rest of disk
-free_space_regions = disk.getFreeSpaceRegions()
-geometry2 = free_space_regions[-1]
-filesystem2 = parted.FileSystem(type="ext4", geometry=geometry2)
-partition1 = parted.Partition(
-    disk=disk, type=parted.PARTITION_NORMAL, fs=filesystem2, geometry=geometry2
-)
-disk.commit()
+disk = target["disk"].replace("/","\/")
+subprocess.check_call(["sed", "-i", f"s/partition_here/'{disk}'/g", "partition.sh"])
+subprocess.check_call("bash partition.sh", shell=True)
 print("[green]done partitioning disk[/green]")
+subprocess.check_call(["lsblk"])
+print("[green]formating new partions, this may take a while[/]")
 
 if not os.path.exists("root"):
     os.mkdir("root")
@@ -198,15 +178,11 @@ if any(os.scandir("boot")):
     )
 
 # mount the root partition
-ctx_root = mnt.Context()
-ctx_root.source = target
-ctx_root.target = "root"
-ctx_root.mount()
+subprocess.check_call(["mkfs.vfat",f"{target['disk']}1"])
+subprocess.check_call(["mkfs.ext4",f"{target['disk']}2"])
+os.system(f"mount {target['disk']}2 root")
 # mount boot
-ctx_boot = mnt.Context()
-ctx_boot.source = target
-ctx_boot.target = "boot"
-ctx_boot.mount()
+os.system(f"mount {target['disk']}1 boot")
 
 available_pis = ["rpi", "rpi-2", "rpi-3", "rpi-4"]
 aarch_64_pis = ["rpi-3", "rpi-4"]
