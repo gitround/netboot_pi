@@ -30,7 +30,7 @@ def pxeify(convert: bool = False, target=None):
     if is_sd_card == "N":
         subprocess.run("sed -i 's/mmcblk0/sda1/g boot/cmdline.txt", shell=True)
         subprocess.run("sed -i 's/mmcblk0/sda2/g root/etc/fstab", shell=True)
-    shutil.copy("second_stage.py", "root/etc/profile/")
+    shutil.copy("second_stage.py", "root/etc/profile.d/")
     os.mkdir("root/scripts")
     shutil.copytree("stage_scripts", "root/scripts")
 
